@@ -1,0 +1,19 @@
+{
+  "name": "libgen-book-finder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Firefox extension that finds a book on the current page and opens a Library Genesis search.",
+  "license": "MIT",
+  "scripts": {
+    "build": "web-ext build --overwrite-dest --filename libgen-book-finder.xpi --ignore-files README.md package.json package-lock.json test tools",
+    "lint": "web-ext lint --ignore-files README.md package.json package-lock.json test tools",
+    "start": "web-ext run --ignore-files README.md package.json package-lock.json test tools",
+    "test": "node test/isbn.test.js && node test/libgen.test.js"
+  },
+  "devDependencies": {
+    "web-ext": "10.6.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

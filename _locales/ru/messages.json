@@ -2,7 +2,6 @@
   "extName": { "message": "LibGen Book Finder" },
   "extDescription": { "message": "Находит ISBN, DOI или название книги на текущей странице и открывает поиск в Library Genesis." },
   "actionTitle": { "message": "Искать эту книгу в Library Genesis" },
-  "actionTitleList": { "message": "Выбрать книги для поиска в Library Genesis (найдено: $1)" },
   "commandOpen": { "message": "Искать текущую книгу в Library Genesis" },
 
   "menuSearchLink": { "message": "Искать ISBN/DOI из ссылки в Library Genesis" },
@@ -12,16 +11,6 @@
 
   "popupOpen": { "message": "Искать в LibGen" },
   "popupNoQuery": { "message": "Идентификатор книги не найден — введите запрос" },
-  "popupTypeQuery": { "message": "Введите ISBN, DOI или название" },
-  "popupSelectBooks": { "message": "Выбрать книги… (найдено: $1)" },
-  "selectHeading": { "message": "Выберите книги для поиска в Library Genesis" },
-  "selectEmpty": { "message": "На странице не найдено книг. Обновите страницу и попробуйте снова." },
-  "selectAll": { "message": "Выбрать все" },
-  "selectNone": { "message": "Снять все" },
-  "selectCancel": { "message": "Отмена" },
-  "selectOpen": { "message": "Открыть" },
-  "selectOpenCount": { "message": "Открыть ($1)" },
-
   "popupEditMirrors": { "message": "Редактировать список зеркал" },
   "optMirrorHeading": { "message": "Зеркало" },
   "optCustomMirror": { "message": "Своё:" },

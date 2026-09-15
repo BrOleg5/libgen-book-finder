@@ -9,7 +9,7 @@ A Firefox extension that detects a book on the current page and opens a Library 
 - Detects DOI metadata and DOI links. For common book DOI formats, it extracts the embedded ISBN.
 - Optionally asks Crossref whether an otherwise bare DOI belongs to a book and uses the returned ISBN.
 - Falls back to the page title only when metadata identifies the page as a book.
-- Shows a selection window when a list page contains several books.
+- Shows its address-bar action only when one unambiguous book or article is detected.
 - Searches selected text from Firefox's context menu.
 - Supports both major LibGen mirror families and custom mirrors.
 - Includes English and Russian interfaces.
@@ -40,7 +40,7 @@ Detection is deliberately ordered to avoid guessing:
 4. Exactly one DOI found in links or visible text.
 5. The title of a page explicitly marked as a book by Open Graph or JSON-LD.
 
-Several identifiers without a trusted page-level identifier are treated as a list page. The address-bar action then opens a picker instead of choosing one silently.
+Several identifiers without a trusted page-level identifier are treated as ambiguous. The address-bar action remains hidden instead of choosing one silently.
 
 ISBN always has priority over DOI. ISBN-10 is checksum-validated and converted to ISBN-13. A bare ISBN-10 in general page text is ignored because ten-digit numbers produce too many false positives; labelled values such as `ISBN-10: 0-306-40615-2` are accepted.
 
@@ -75,10 +75,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\make-icons.ps1
 
 ```text
 background/   Context menus, tabs, badges, Crossref lookup
-content/      Page detection and list-item titles
+content/      Page detection and primary-query selection
 lib/          ISBN, DOI, mirror URL, and settings modules
 popup/        Toolbar popup and options UI
-select/       Multi-book selection window
 _locales/     English and Russian messages
 icons/        Generated extension icons
 tools/        Icon generator

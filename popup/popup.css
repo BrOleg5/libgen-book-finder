@@ -21,7 +21,5 @@ details { margin-top: 6px; }
 summary { cursor: pointer; font-size: 12px; opacity: .85; }
 textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, Consolas, monospace; resize: vertical; margin-top: 4px; }
 button.primary { font-weight: 600; }
-.select-books { width: 100%; margin-top: 6px; padding: 4px 8px; }
-.select-books[hidden] { display: none; }
 .saved { position: fixed; right: 12px; bottom: 8px; margin: 0; padding: 2px 8px; border-radius: 4px; background: #1a7f37; color: white; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
 .saved.visible { opacity: 1; }

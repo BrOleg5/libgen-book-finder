@@ -16,7 +16,7 @@ function New-RoundedPath([float]$x, [float]$y, [float]$width, [float]$height, [f
     return $path
 }
 
-function New-Icon([int]$iconSize, [bool]$isList) {
+function New-Icon([int]$iconSize) {
     $bitmap = New-Object System.Drawing.Bitmap($iconSize, $iconSize)
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
@@ -28,34 +28,22 @@ function New-Icon([int]$iconSize, [bool]$isList) {
     $graphics.FillPath($background, $shape)
 
     $white = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
-    if ($isList) {
-        $barX = $iconSize * 0.23
-        $barWidth = $iconSize * 0.54
-        $barHeight = [Math]::Max(1.5, $iconSize * 0.105)
-        foreach ($barY in @(($iconSize * 0.25), ($iconSize * 0.45), ($iconSize * 0.65))) {
-            $bar = New-RoundedPath $barX $barY $barWidth $barHeight ($barHeight * 0.45)
-            $graphics.FillPath($white, $bar)
-            $bar.Dispose()
-        }
-    } else {
-        $pointsLeft = [System.Drawing.PointF[]]@(
+    $pointsLeft = [System.Drawing.PointF[]]@(
             [System.Drawing.PointF]::new($iconSize * 0.18, $iconSize * 0.27),
             [System.Drawing.PointF]::new($iconSize * 0.45, $iconSize * 0.34),
             [System.Drawing.PointF]::new($iconSize * 0.45, $iconSize * 0.76),
             [System.Drawing.PointF]::new($iconSize * 0.18, $iconSize * 0.67)
-        )
-        $pointsRight = [System.Drawing.PointF[]]@(
+    )
+    $pointsRight = [System.Drawing.PointF[]]@(
             [System.Drawing.PointF]::new($iconSize * 0.82, $iconSize * 0.27),
             [System.Drawing.PointF]::new($iconSize * 0.55, $iconSize * 0.34),
             [System.Drawing.PointF]::new($iconSize * 0.55, $iconSize * 0.76),
             [System.Drawing.PointF]::new($iconSize * 0.82, $iconSize * 0.67)
-        )
-        $graphics.FillPolygon($white, $pointsLeft)
-        $graphics.FillPolygon($white, $pointsRight)
-    }
+    )
+    $graphics.FillPolygon($white, $pointsLeft)
+    $graphics.FillPolygon($white, $pointsRight)
 
-    $prefix = if ($isList) { "list" } else { "icon" }
-    $target = Join-Path $iconDirectory "$prefix-$iconSize.png"
+    $target = Join-Path $iconDirectory "icon-$iconSize.png"
     $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
     $white.Dispose()
     $shape.Dispose()
@@ -64,7 +52,6 @@ function New-Icon([int]$iconSize, [bool]$isList) {
     $bitmap.Dispose()
 }
 
-foreach ($iconSize in @(16, 32, 48, 96)) { New-Icon $iconSize $false }
-foreach ($iconSize in @(16, 32)) { New-Icon $iconSize $true }
+foreach ($iconSize in @(16, 32, 48, 96)) { New-Icon $iconSize }
 
 Write-Host "Generated icons in $iconDirectory"

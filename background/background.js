@@ -14,7 +14,6 @@
   };
   const BADGE_COLOR = "#238636";
   const BOOK_ICON = { 16: "icons/icon-16.png", 32: "icons/icon-32.png" };
-  const LIST_ICON = { 16: "icons/list-16.png", 32: "icons/list-32.png" };
   const CROSSREF_TIMEOUT_MS = 6000;
   const BOOK_TYPES = new Set(["book", "monograph", "edited-book", "book-chapter", "book-section", "reference-book"]);
   const knownQueries = new Map();
@@ -60,15 +59,11 @@
     } catch (e) { /* tab closed */ }
   }
 
-  async function updatePageAction(tabId, query, count) {
+  async function updatePageAction(tabId, query) {
     try {
       if (validQuery(query)) {
         await browser.pageAction.setIcon({ path: BOOK_ICON, tabId });
         await browser.pageAction.setTitle({ title: i18n("actionTitle") + "\n" + query.value, tabId });
-        await browser.pageAction.show(tabId);
-      } else if (count > 1) {
-        await browser.pageAction.setIcon({ path: LIST_ICON, tabId });
-        await browser.pageAction.setTitle({ title: i18n("actionTitleList", [String(count)]), tabId });
         await browser.pageAction.show(tabId);
       } else await browser.pageAction.hide(tabId);
     } catch (e) { /* tab closed */ }
@@ -129,51 +124,19 @@
     return openUrl(url, openerTab, Object.assign({ openIn: current.openIn }, options));
   }
 
-  async function openQueries(queries, openerTab) {
-    const clean = queries.filter(validQuery);
-    if (clean.length === 1) return openQuery(clean[0], openerTab);
-    let index = openerTab ? openerTab.index + 1 : undefined;
-    for (let i = 0; i < clean.length; i++) {
-      try {
-        const tab = await openQuery(clean[i], openerTab, { openIn: "newTab", index, active: i === 0 });
-        if (index !== undefined && tab) index = tab.index + 1;
-      } catch (e) { console.error("LibGen Book Finder:", clean[i], e); }
-    }
-    return null;
-  }
-
-  const SELECT_WINDOW_SIZE = { width: 660, height: 640 };
-  function openSelectWindow(tab) {
-    return browser.windows.create({
-      url: browser.runtime.getURL("select/select.html") + "?tab=" + tab.id,
-      type: "popup", width: SELECT_WINDOW_SIZE.width, height: SELECT_WINDOW_SIZE.height
-    });
-  }
-
-  async function tabItems(tabId) {
-    let tab = null;
-    let response = null;
-    try {
-      tab = await browser.tabs.get(tabId);
-      response = await browser.tabs.sendMessage(tabId, { type: "getQuery", withTitles: true });
-    } catch (e) { /* restricted or closed tab */ }
-    return { items: response && response.items || [], pageTitle: tab && tab.title || "" };
-  }
-
-  async function queriesForTab(tab) {
-    if (!tab) return { primary: null, all: [], count: 0 };
+  async function queryForTab(tab) {
+    if (!tab) return { primary: null };
     try {
       const response = await browser.tabs.sendMessage(tab.id, { type: "getQuery" });
       if (response) return response;
     } catch (e) { /* restricted page */ }
     const query = queryFromValue(tab.url || "", false);
-    return { primary: query, all: query ? [query] : [], count: query ? 1 : 0 };
+    return { primary: query };
   }
 
   async function openForTab(tab) {
-    const result = await queriesForTab(tab);
+    const result = await queryForTab(tab);
     if (result.primary) return openQuery(result.primary, tab);
-    if (result.all && result.all.length > 1) return openSelectWindow(tab);
     return null;
   }
 
@@ -211,7 +174,7 @@
           browser.contextMenus.update(MENU.link, { visible: !!queryFromLink(info) }),
           browser.contextMenus.update(MENU.selectionId, { visible: !!selectedId }),
           browser.contextMenus.update(MENU.selectionText, { visible: !!selectedText }),
-          browser.contextMenus.update(MENU.page, { visible: !!(known && known.primary) })
+          browser.contextMenus.update(MENU.page, { visible: !!known })
         ]);
         await browser.contextMenus.refresh();
       } catch (e) { /* menu closed */ }
@@ -238,19 +201,13 @@
   browser.runtime.onMessage.addListener((message, sender) => {
     if (!message) return undefined;
     if (message.type === "queryFound" && sender.tab) {
-      const data = { primary: validQuery(message.primary) ? message.primary : null, count: Number(message.count) || 0 };
-      knownQueries.set(sender.tab.id, data);
-      return Promise.all([setBadge(sender.tab.id, data.primary), updatePageAction(sender.tab.id, data.primary, data.count)]);
+      const query = validQuery(message.primary) ? message.primary : null;
+      if (query) knownQueries.set(sender.tab.id, query);
+      else knownQueries.delete(sender.tab.id);
+      return Promise.all([setBadge(sender.tab.id, query), updatePageAction(sender.tab.id, query)]);
     }
     if (message.type === "openQuery" && validQuery(message.query)) return activeTab().then((tab) => openQuery(message.query, tab));
-    if (message.type === "getTabQueries") return activeTab().then(queriesForTab);
-    if (message.type === "openSelectWindow") return activeTab().then((tab) => tab && openSelectWindow(tab));
-    if (message.type === "getTabItems" && Number.isInteger(message.tabId)) return tabItems(message.tabId);
-    if (message.type === "openQueries" && Number.isInteger(message.tabId) && Array.isArray(message.queries)) {
-      browser.tabs.get(message.tabId).catch(() => undefined)
-        .then((tab) => openQueries(message.queries, tab)).catch(console.error);
-      return Promise.resolve();
-    }
+    if (message.type === "getTabQuery") return activeTab().then(queryForTab);
     return undefined;
   });
 
@@ -258,7 +215,7 @@
     if (changeInfo.status === "loading") {
       knownQueries.delete(tabId);
       clearBadge(tabId);
-      updatePageAction(tabId, null, 0);
+      updatePageAction(tabId, null);
     }
   }, { properties: ["status"] });
   browser.tabs.onRemoved.addListener((tabId) => knownQueries.delete(tabId));
@@ -266,7 +223,7 @@
     if (area !== "sync") return;
     settingsCache = null;
     if (changes.showBadge) {
-      for (const [tabId, data] of knownQueries) setBadge(tabId, data.primary);
+      for (const [tabId, query] of knownQueries) setBadge(tabId, query);
     }
   });
 

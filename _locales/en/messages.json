@@ -2,7 +2,6 @@
   "extName": { "message": "LibGen Book Finder" },
   "extDescription": { "message": "Finds a book's ISBN, DOI or title on the current page and opens a Library Genesis search." },
   "actionTitle": { "message": "Search for this book in Library Genesis" },
-  "actionTitleList": { "message": "Select books to search in Library Genesis ($1 found)" },
   "commandOpen": { "message": "Search for the current book in Library Genesis" },
 
   "menuSearchLink": { "message": "Search ISBN/DOI from link in Library Genesis" },
@@ -12,16 +11,6 @@
 
   "popupOpen": { "message": "Search LibGen" },
   "popupNoQuery": { "message": "No book identifier found — type a query" },
-  "popupTypeQuery": { "message": "Type an ISBN, DOI or title" },
-  "popupSelectBooks": { "message": "Select books… ($1 found)" },
-  "selectHeading": { "message": "Select books to search in Library Genesis" },
-  "selectEmpty": { "message": "No books found on this page. Reload the page and try again." },
-  "selectAll": { "message": "Select All" },
-  "selectNone": { "message": "Deselect All" },
-  "selectCancel": { "message": "Cancel" },
-  "selectOpen": { "message": "Open" },
-  "selectOpenCount": { "message": "Open ($1)" },
-
   "popupEditMirrors": { "message": "Edit mirror list" },
   "optMirrorHeading": { "message": "Mirror" },
   "optCustomMirror": { "message": "Custom:" },

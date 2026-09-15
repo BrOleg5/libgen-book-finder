@@ -15,7 +15,6 @@
   ];
   const DOI_JSON_KEYS = ["doi", "DOI", "identifier", "@id", "sameAs", "url", "mainEntityOfPage"];
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "TEMPLATE", "SVG"]);
-  const TITLE_SELECTORS = "h1, h2, h3, h4, h5, h6, [itemprop='name'], [itemprop='headline'], [class*='title' i], [class*='heading' i]";
   const MAX_TEXT_NODES = 50000;
 
   function pushIsbn(list, raw) { I.pushUnique(list, raw); }
@@ -108,26 +107,25 @@
 
   function keyOf(query) { return query.kind + ":" + query.value.toLowerCase(); }
 
-  function remember(items, anchors, query, element) {
+  function remember(items, query) {
     if (!query || !query.value) return;
     const key = keyOf(query);
     if (!items.some((item) => keyOf(item) === key)) items.push(query);
-    if (element && !anchors.has(key)) anchors.set(key, element);
   }
 
-  function scanLinks(items, anchors) {
+  function scanLinks(items) {
     for (const anchor of document.querySelectorAll("a[href]")) {
       const isbn = I.extractIsbnFromUrl(anchor.href) || I.extractAllIsbns(anchor.textContent)[0];
-      if (isbn) remember(items, anchors, { kind: "isbn", value: isbn }, anchor);
+      if (isbn) remember(items, { kind: "isbn", value: isbn });
       const doi = D.extractDoiFromUrl(anchor.href) || D.extractDoiFromText(anchor.textContent);
       if (doi) {
         const fromDoi = I.isbnFromDoi(doi);
-        remember(items, anchors, { kind: fromDoi ? "isbn" : "doi", value: fromDoi || doi }, anchor);
+        remember(items, { kind: fromDoi ? "isbn" : "doi", value: fromDoi || doi });
       }
     }
   }
 
-  function scanText(items, anchors) {
+  function scanText(items) {
     const root = document.body || document.documentElement;
     if (!root) return;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
@@ -140,10 +138,10 @@
     let node;
     let visited = 0;
     while ((node = walker.nextNode()) && visited++ < MAX_TEXT_NODES) {
-      for (const isbn of I.extractAllIsbns(node.nodeValue)) remember(items, anchors, { kind: "isbn", value: isbn }, node.parentElement);
+      for (const isbn of I.extractAllIsbns(node.nodeValue)) remember(items, { kind: "isbn", value: isbn });
       for (const doi of D.extractAllDois(node.nodeValue)) {
         const fromDoi = I.isbnFromDoi(doi);
-        remember(items, anchors, { kind: fromDoi ? "isbn" : "doi", value: fromDoi || doi }, node.parentElement);
+        remember(items, { kind: fromDoi ? "isbn" : "doi", value: fromDoi || doi });
       }
     }
   }
@@ -162,36 +160,7 @@
     return metadataIsbnList.length > 0 || jsonLd.isBookPage || type === "book" || type === "books.book";
   }
 
-  function containerFor(anchor, query) {
-    let element = anchor;
-    for (let depth = 0; element && depth < 6; depth++) {
-      const parent = element.parentElement;
-      if (!parent || parent === document.body || (parent.textContent || "").length > 4000) break;
-      let occurrences = 0;
-      if (query.kind === "isbn") occurrences = I.extractAllIsbns(parent.textContent).length;
-      else occurrences = D.extractAllDois(parent.textContent).length;
-      if (occurrences > 1) break;
-      element = parent;
-    }
-    return element || anchor;
-  }
-
-  function titleFor(anchor, query) {
-    if (!anchor) return "";
-    if (anchor.matches && anchor.matches("a")) {
-      const own = D.cleanTitle(anchor.textContent, query.value);
-      if (own.length >= 12 && own.length <= 300) return own;
-    }
-    const container = containerFor(anchor, query);
-    for (const element of container.querySelectorAll(TITLE_SELECTORS)) {
-      const title = D.cleanTitle(element.textContent, query.value);
-      if (title.length >= 8) return title.slice(0, 300);
-    }
-    const plain = D.cleanTitle(container.textContent, query.value);
-    return plain.length >= 8 && plain.length <= 600 ? plain.slice(0, 300) : "";
-  }
-
-  function findQueries(options) {
+  function findQuery() {
     const metaIsbns = metadataIsbns();
     const metaDois = metadataDois();
     const jsonLd = jsonLdData();
@@ -199,9 +168,8 @@
     for (const doi of jsonLd.dois) pushDoi(metaDois, doi);
     const urls = urlData();
     const pageItems = [];
-    const anchors = new Map();
-    scanLinks(pageItems, anchors);
-    scanText(pageItems, anchors);
+    scanLinks(pageItems);
+    scanText(pageItems);
     const pageIsbns = pageItems.filter((q) => q.kind === "isbn").map((q) => q.value);
     const pageDois = pageItems.filter((q) => q.kind === "doi").map((q) => q.value);
     const title = pageTitle(jsonLd);
@@ -211,38 +179,22 @@
       metadataDois: metaDois, urlDois: urls.dois,
       pageIsbns, pageDois, isBookPage, title
     });
-    const all = [];
-    const add = (q) => { if (q && !all.some((item) => keyOf(item) === keyOf(q))) all.push(q); };
-    for (const isbn of metaIsbns.concat(urls.isbns)) add({ kind: "isbn", value: isbn });
-    for (const doi of metaDois.concat(urls.dois)) {
-      const fromDoi = I.isbnFromDoi(doi);
-      add({ kind: fromDoi ? "isbn" : "doi", value: fromDoi || doi });
-    }
-    for (const item of pageItems) add(item);
-    if (selected.primary && selected.primary.kind === "text") add(selected.primary);
-    const result = { primary: selected.primary, all, count: all.length, isBookPage, source: selected.source };
-    if (options && options.withTitles) {
-      result.items = all
-        .filter((q) => q.kind !== "text")
-        .map((q) => ({ kind: q.kind, value: q.value, title: titleFor(anchors.get(keyOf(q)), q) }));
-    }
-    return result;
+    return { primary: selected.primary, isBookPage, source: selected.source };
   }
 
   browser.runtime.onMessage.addListener((message) => {
-    if (message && message.type === "getQuery") return Promise.resolve(findQueries({ withTitles: !!message.withTitles }));
+    if (message && message.type === "getQuery") return Promise.resolve(findQuery());
     return undefined;
   });
 
-  let lastReported = "";
+  let lastReported = null;
   function report() {
     let result;
-    try { result = findQueries(); } catch (e) { return; }
+    try { result = findQuery(); } catch (e) { return; }
     const primary = result.primary ? keyOf(result.primary) : "";
-    const signature = primary + "|" + result.count;
-    if (signature === lastReported) return;
-    lastReported = signature;
-    browser.runtime.sendMessage({ type: "queryFound", primary: result.primary, count: result.count }).catch(() => {});
+    if (primary === lastReported) return;
+    lastReported = primary;
+    browser.runtime.sendMessage({ type: "queryFound", primary: result.primary }).catch(() => {});
   }
 
   report();

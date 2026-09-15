@@ -44,27 +44,14 @@
     window.close();
   }
 
-  function showSelectButton(count) {
-    const button = $("select-books");
-    button.textContent = i18n("popupSelectBooks", [String(count)]);
-    button.hidden = false;
-    button.addEventListener("click", async () => {
-      try { await browser.runtime.sendMessage({ type: "openSelectWindow" }); }
-      finally { window.close(); }
-    });
-  }
-
   async function loadTabQuery() {
-    let result = { primary: null, all: [] };
-    try { result = await browser.runtime.sendMessage({ type: "getTabQueries" }) || result; }
+    let result = { primary: null };
+    try { result = await browser.runtime.sendMessage({ type: "getTabQuery" }) || result; }
     catch (e) { /* background unavailable */ }
     $("open").disabled = false;
     if (result.primary) {
       $("query").value = result.primary.value;
       updateKind();
-    } else if (result.all && result.all.length > 1) {
-      $("query").placeholder = i18n("popupTypeQuery");
-      showSelectButton(result.all.length);
     } else $("query").placeholder = i18n("popupNoQuery");
   }
 

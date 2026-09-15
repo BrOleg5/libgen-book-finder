@@ -1,0 +1,27 @@
+:root { color-scheme: light dark; font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+body { margin: 0; padding: 10px 12px 14px; width: 430px; box-sizing: border-box; }
+main { display: flex; flex-direction: column; gap: 14px; }
+section { margin: 0; }
+h2 { font-size: 13px; font-weight: 600; margin: 0 0 6px; padding-bottom: 3px; border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+.row, .mirror-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.query-row { gap: 5px; }
+#query { flex: 1; min-width: 0; }
+#query:placeholder-shown { opacity: .8; }
+.kind { min-width: 36px; padding: 1px 4px; border-radius: 3px; text-align: center; font-size: 10px; font-weight: 700; background: color-mix(in srgb, currentColor 12%, transparent); }
+.mirror-list { display: flex; flex-direction: column; gap: 1px; }
+.mirror-row .name { min-width: 155px; font-family: ui-monospace, Consolas, monospace; }
+.custom-row input[type="text"] { flex: 1; min-width: 90px; }
+.custom-row select { width: 70px; }
+.status { font-size: 12px; opacity: .85; white-space: nowrap; }
+.status.ok { color: #1a7f37; }
+.status.fail { color: #cf222e; }
+.actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.note { font-size: 12px; opacity: .7; margin: 4px 0; }
+details { margin-top: 6px; }
+summary { cursor: pointer; font-size: 12px; opacity: .85; }
+textarea { width: 100%; box-sizing: border-box; font-family: ui-monospace, Consolas, monospace; resize: vertical; margin-top: 4px; }
+button.primary { font-weight: 600; }
+.select-books { width: 100%; margin-top: 6px; padding: 4px 8px; }
+.select-books[hidden] { display: none; }
+.saved { position: fixed; right: 12px; bottom: 8px; margin: 0; padding: 2px 8px; border-radius: 4px; background: #1a7f37; color: white; font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.saved.visible { opacity: 1; }

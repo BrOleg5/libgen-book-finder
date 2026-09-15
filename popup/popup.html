@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title data-i18n="extName">LibGen Book Finder</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <section class="open-section">
+      <div class="row query-row">
+        <input type="text" id="query" spellcheck="false" autocomplete="off">
+        <span id="query-kind" class="kind">text</span>
+        <button id="open" class="primary" data-i18n="popupOpen">Search LibGen</button>
+      </div>
+      <button id="select-books" class="select-books" hidden></button>
+    </section>
+
+    <section>
+      <h2 data-i18n="optMirrorHeading">Mirror</h2>
+      <div id="mirror-list" class="mirror-list"></div>
+      <label class="mirror-row custom-row">
+        <input type="radio" name="mirror" id="mirror-custom" value="custom">
+        <span data-i18n="optCustomMirror">Custom:</span>
+        <input type="text" id="custom-mirror" placeholder="libgen.example" spellcheck="false">
+        <select id="custom-family" aria-label="Mirror family">
+          <option value="li">li</option>
+          <option value="classic">classic</option>
+        </select>
+        <span class="status" id="status-custom"></span>
+      </label>
+      <div class="actions">
+        <button id="check-mirrors" data-i18n="optCheckMirrors">Check availability</button>
+        <span id="check-note" class="note"></span>
+      </div>
+      <details>
+        <summary data-i18n="popupEditMirrors">Edit mirror list</summary>
+        <p class="note" data-i18n="optMirrorListHint">One mirror per line: host [family].</p>
+        <textarea id="mirrors-text" rows="6" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="save-mirrors" data-i18n="optSaveList">Save list</button>
+          <button id="reset-mirrors" data-i18n="optResetList">Reset to defaults</button>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <h2 data-i18n="optBehaviorHeading">Behaviour</h2>
+      <label class="row">
+        <span data-i18n="optOpenIn">Open results in</span>
+        <select id="open-in">
+          <option value="newTab" data-i18n="optOpenInNewTab">new tab</option>
+          <option value="currentTab" data-i18n="optOpenInCurrentTab">current tab</option>
+        </select>
+      </label>
+      <label class="row">
+        <input type="checkbox" id="show-badge">
+        <span data-i18n="optShowBadge">Show an identifier badge</span>
+      </label>
+      <label class="row">
+        <input type="checkbox" id="use-crossref">
+        <span data-i18n="optCrossref">Use Crossref to resolve book DOIs to ISBNs</span>
+      </label>
+      <p class="note" data-i18n="optShortcutHint">Default shortcut: Ctrl+Shift+U.</p>
+    </section>
+
+    <p id="saved" class="saved" data-i18n="optSaved">Saved</p>
+  </main>
+  <script src="../lib/isbn.js"></script>
+  <script src="../lib/doi.js"></script>
+  <script src="../lib/libgen.js"></script>
+  <script src="../lib/settings.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

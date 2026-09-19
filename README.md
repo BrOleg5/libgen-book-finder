@@ -25,6 +25,13 @@ The extension opens a search-results page. It does not scrape Library Genesis re
 - Searches identifiers and arbitrary selected text from the Firefox context menu.
 - Supports the `li` and `classic` LibGen mirror families, custom mirrors, and basic availability checks.
 
+### Install
+
+Install from [addons.mozilla.org][AMO], or download the XPI attached to a
+[GitHub release][Releases] and open it in Firefox. Both files are the same build
+signed by Mozilla, so Firefox installs either one and keeps the extension up to
+date automatically through addons.mozilla.org.
+
 ### Using the extension
 
 When a single book or article is detected, a book icon appears in the Firefox address bar. Select it to open the corresponding Library Genesis search.
@@ -105,7 +112,11 @@ Build the XPI package:
 npm run build
 ```
 
-The resulting file is written to `web-ext-artifacts/libgen-book-finder.xpi`.
+The resulting file is written to `web-ext-artifacts/libgen-book-finder.xpi`. Tests,
+tools, release scripts, the README and npm files are left out of it. The list of
+excluded files lives in `web-ext-config.cjs` and is shared by `build`, `lint`,
+`start` and `sign`, so the package uploaded to addons.mozilla.org has exactly the
+same contents.
 
 ### Manual loading
 
@@ -128,16 +139,63 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\make-icons.ps1
 ### Project layout
 
 ```text
-background/   Context menus, tabs, badges, and Crossref lookup
-content/      Page detection and primary-query selection
-lib/          ISBN, DOI, mirror URL, and settings modules
-popup/        Toolbar popup and options UI
-_locales/     English and Russian messages
-icons/        Generated extension icons
-tools/        Icon generator
-test/         Dependency-free Node.js unit tests
+web-ext-config.cjs   Shared web-ext options (ignored files, package name)
+background/          Context menus, tabs, badges, and Crossref lookup
+content/             Page detection and primary-query selection
+lib/                 ISBN, DOI, mirror URL, and settings modules
+popup/               Toolbar popup and options UI
+_locales/            English and Russian messages
+icons/               Generated extension icons
+tools/               Icon generator
+scripts/             Release helper scripts
+test/                Dependency-free Node.js unit tests
+.github/workflows/   Release and signing workflows
 ```
 
 The extension uses Manifest V2 and plain IIFE modules exposed through `globalThis`; it has no bundling or transpilation step.
 
+### Release
+
+Push a tag matching the version in `manifest.json`. For example, for version
+`1.0.0`:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The **Release XPI** workflow then:
+
+1. runs the tests and the lint;
+2. creates a **draft** GitHub release for the tag (if it does not exist yet);
+3. uploads the version to addons.mozilla.org (`npm run sign`) without waiting for
+   the review;
+4. waits up to 20 minutes for Mozilla to sign the version, then downloads the
+   signed XPI from AMO, checks its sha256, attaches it to the release and
+   publishes the release.
+
+Review on AMO can take days. If the version is not signed within those 20 minutes,
+the workflow ends successfully and leaves the release as a draft. The **Attach
+signed XPI** workflow runs every 6 hours, finds draft releases with a `v*` tag and
+no XPI attached, and finishes the job once Mozilla has signed them. It can also be
+started by hand from **Actions** (optionally for a single tag). Both workflows use
+`scripts/publish-signed-xpi.mjs`, which takes the extension ID from
+`manifest.json`, so re-running them is safe.
+
+To run a release manually, open **Actions**, select **Release XPI**, click
+**Run workflow** and enter an existing tag matching the manifest version. Uploading
+a version that AMO already knows is not treated as a failure.
+
+### Repository secrets
+
+Uploading to AMO needs an API credential from
+[Developer Hub → Manage API Keys](https://addons.mozilla.org/developers/addon/api/key/),
+stored as repository secrets:
+
+- `AMO_JWT_ISSUER` — the JWT issuer (`user:…`), passed as `WEB_EXT_API_KEY`;
+- `AMO_JWT_SECRET` — the JWT secret, passed as `WEB_EXT_API_SECRET`.
+
+Downloading the signed XPI and updating releases uses the built-in `GITHUB_TOKEN`.
+
 [AMO]: https://addons.mozilla.org/en/firefox/addon/libgen-book-finder/
+[Releases]: https://github.com/BrOleg5/libgen-book-finder/releases

@@ -1,8 +1,15 @@
 # LibGen Book Finder
 
+[![Badge Mozilla](https://img.shields.io/amo/v/libgen-book-finder?label=Firefox&logo=firefox)][AMO]
+
+[![Firefox Get The Add-on](https://extensionworkshop.com/assets/img/documentation/publish/get-the-addon-178x60px.dad84b42.png)][AMO]
+
 LibGen Book Finder is a Firefox extension that detects the book or article described by the current page and opens a matching search in Library Genesis. It is designed for publisher pages, bookshops, catalogues, Google Books, Goodreads, Open Library, WorldCat, and other pages that expose an ISBN, DOI, or structured book metadata.
 
 The extension opens a search-results page. It does not scrape Library Genesis results or download files.
+
+> [!NOTE]
+> The code for this extension was written entirely by AI coding agents under the developer’s direction.
 
 ## For users
 
@@ -132,3 +139,5 @@ test/         Dependency-free Node.js unit tests
 ```
 
 The extension uses Manifest V2 and plain IIFE modules exposed through `globalThis`; it has no bundling or transpilation step.
+
+[AMO]: https://addons.mozilla.org/en/firefox/addon/libgen-book-finder/

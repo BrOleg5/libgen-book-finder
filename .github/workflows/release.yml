@@ -1,0 +1,105 @@
+name: Release XPI
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to build (for example, v1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Submit to AMO and publish XPI
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release version
+        shell: bash
+        run: |
+          manifest_version="$(node -p 'require("./manifest.json").version')"
+          expected_tag="v${manifest_version}"
+
+          if [[ "${RELEASE_TAG}" != "${expected_tag}" ]]; then
+            echo "Release tag ${RELEASE_TAG} does not match manifest version ${manifest_version}."
+            echo "Expected tag: ${expected_tag}"
+            exit 1
+          fi
+
+      - name: Run tests
+        run: npm test
+
+      - name: Lint extension
+        run: npm run lint
+
+      - name: Create draft release
+        shell: bash
+        run: |
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists."
+            exit 0
+          fi
+
+          # Kept outside the checkout so that it cannot end up in the AMO package.
+          notes_file="${RUNNER_TEMP}/release-notes.md"
+
+          cat > "${notes_file}" <<'EOF'
+          The signed XPI is attached once addons.mozilla.org has reviewed this
+          version; updates then arrive automatically from AMO.
+          EOF
+
+          gh release create "${RELEASE_TAG}" \
+            --draft \
+            --verify-tag \
+            --title "${RELEASE_TAG}" \
+            --notes-file "${notes_file}" \
+            --generate-notes
+
+      - name: Submit version to addons.mozilla.org
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        shell: bash
+        run: |
+          set +e
+          output="$(npm run sign 2>&1)"
+          status=$?
+          set -e
+
+          printf '%s\n' "${output}"
+
+          if [[ ${status} -ne 0 ]]; then
+            if grep -qi "already exists" <<<"${output}"; then
+              echo "::notice::This version is already uploaded to AMO; continuing."
+            else
+              exit "${status}"
+            fi
+          fi
+
+      - name: Attach signed XPI
+        shell: bash
+        run: node scripts/publish-signed-xpi.mjs --tag "${RELEASE_TAG}" --wait-minutes 20
